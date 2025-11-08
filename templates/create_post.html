@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block head_title %}Crear Posteo{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  {% if current_user.is_authenticated %}
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title text-center mb-4">Crear Post</h2>
+          <form method="POST">
+            <div class="mb-3">
+              <label for="titulo" class="form-label">Título</label>
+              <input type="text" class="form-control" id="titulo" name="titulo" required>
+            </div>
+            <div class="mb-3">
+              <label for="contenido" class="form-label">Contenido</label>
+              <textarea class="form-control" id="contenido" name="contenido" rows="6" required></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="categorias" class="form-label">Categorías</label>
+              <select name="categorias" id="categorias" class="form-select" multiple>
+                {% for cat in categorias %}
+                  <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+                {% endfor %}
+              </select>
+              <div class="form-text">Mantén presionada la tecla CTRL (o CMD en Mac) para seleccionar varias categorías.</div>
+            </div>
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary btn-block">Publicar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <p class="text-center">Por favor, inicia sesión para crear un post.</p>
+  {% endif %}
+</div>
+{% endblock %}
