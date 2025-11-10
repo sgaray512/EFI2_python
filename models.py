@@ -1,45 +1,49 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-from flask_login import UserMixin
 
 db = SQLAlchemy()
 
-# Tabla auxiliar para relacion muchos-muchos
-entrada_categoria = db.Table(
-    'entrada_categoria',
-    db.Column('entrada_id', db.Integer, db.ForeignKey('entrada.id'), primary_key=True),
-    db.Column('categoria_id', db.Integer, db.ForeignKey('categoria.id'), primary_key=True)
-)
-
-class Usuario(db.Model, UserMixin):
+class User(db.Model):
+    __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
-    nombre_usuario = db.Column(db.String(80), unique=True, nullable=False)
-    correo = db.Column(db.String(120), unique=True, nullable=False)
-    contraseña = db.Column(db.String(200), nullable=False)
-    entradas = db.relationship('Entrada', backref='autor', lazy=True)
-    comentarios = db.relationship('Comentario', backref='autor', lazy=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    credential = db.relationship("UserCredential", backref="user", uselist=False, cascade="all, delete-orphan")
+    posts = db.relationship("Post", backref="author", lazy=True)
+    comments = db.relationship("Comment", backref="author", lazy=True)
 
-class Entrada(db.Model):
+class UserCredential(db.Model):
+    __tablename__ = "user_credentials"
     id = db.Column(db.Integer, primary_key=True)
-    titulo = db.Column(db.String(200), nullable=False)
-    contenido = db.Column(db.Text, nullable=False)
-    fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
-    autor_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
-    comentarios = db.relationship('Comentario', backref='entrada', lazy=True)
-    categorias = db.relationship(
-        'Categoria',
-        secondary=entrada_categoria,
-        lazy='subquery',
-        backref=db.backref('entradas', lazy=True)
-    )
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default="user")  # user, moderator, admin
 
-class Comentario(db.Model):
+class Category(db.Model):
+    __tablename__ = "categories"
     id = db.Column(db.Integer, primary_key=True)
-    texto = db.Column(db.Text, nullable=False)
-    fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
-    autor_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
-    entrada_id = db.Column(db.Integer, db.ForeignKey('entrada.id'), nullable=False)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    posts = db.relationship("Post", backref="category", lazy=True)
 
-class Categoria(db.Model):
+class Post(db.Model):
+    __tablename__ = "posts"
     id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(50), unique=True, nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    is_published = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=True)
+    comments = db.relationship("Comment", backref="post", cascade="all, delete-orphan")
+
+class Comment(db.Model):
+    __tablename__ = "comments"
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_visible = db.Column(db.Boolean, default=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey("posts.id"), nullable=False)

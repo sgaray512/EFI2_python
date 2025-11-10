@@ -1,0 +1,107 @@
+### Registro de usuarios
+POST http://127.0.0.1:5000/api/register
+Content-Type: application/json
+
+{
+  "name": "Admin User",
+  "email": "admin@example.com",
+  "password": "admin123",
+  "role": "admin"
+}
+
+###
+POST http://127.0.0.1:5000/api/register
+Content-Type: application/json
+
+{
+  "name": "Moderator User",
+  "email": "moderator@example.com",
+  "password": "mod123",
+  "role": "moderator"
+}
+
+###
+POST http://127.0.0.1:5000/api/register
+Content-Type: application/json
+
+{
+  "name": "Regular User",
+  "email": "user@example.com",
+  "password": "user123",
+  "role": "user"
+}
+
+---
+
+### Login (obtener token JWT)
+POST http://127.0.0.1:5000/api/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "admin123"
+}
+
+> {% client.global.set("token", response.body.access_token); %}
+
+---
+
+### Listar usuarios (solo admin)
+GET http://127.0.0.1:5000/api/users
+Authorization: Bearer {{token}}
+
+---
+
+### Crear categoría (admin o moderator)
+POST http://127.0.0.1:5000/api/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Programación"
+}
+
+---
+
+### Listar categorías
+GET http://127.0.0.1:5000/api/categories
+
+---
+
+### Crear post (usuario autenticado)
+POST http://127.0.0.1:5000/api/posts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Primer post",
+  "content": "Este es un post de prueba",
+  "category_id": 1
+}
+
+---
+
+### Listar posts publicados
+GET http://127.0.0.1:5000/api/posts
+
+---
+
+### Crear comentario en un post
+POST http://127.0.0.1:5000/api/comments/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "content": "Excelente post, gracias!"
+}
+
+---
+
+### Listar comentarios de un post
+GET http://127.0.0.1:5000/api/comments/1
+
+---
+
+### Eliminar comentario (admin, moderator o autor)
+DELETE http://127.0.0.1:5000/api/comments/1
+Authorization: Bearer {{token}}
