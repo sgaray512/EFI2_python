@@ -3,8 +3,8 @@ from models import Comment
 
 class CommentRepository:
     @staticmethod
-    def get_all():
-        return Comment.query.filter_by(is_visible=True).all()
+    def get_by_post_id(post_id: int):
+        return Comment.query.filter_by(post_id=post_id, is_visible=True).all()
 
     @staticmethod
     def get_by_id(comment_id: int):

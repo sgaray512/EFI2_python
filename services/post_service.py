@@ -1,29 +1,40 @@
 from repositories.post_repository import PostRepository
-from models import Post
 
 class PostService:
-    @staticmethod
-    def list_published_posts():
-        return PostRepository.get_all_published()
 
     @staticmethod
-    def get_post_by_id(post_id: int):
+    def list_posts():
+        return PostRepository.get_all()
+
+    @staticmethod
+    def get_post(post_id: int):
         return PostRepository.get_by_id(post_id)
 
     @staticmethod
     def create_post(title: str, content: str, user_id: int, category_id: int = None):
         if not title or not content:
-            raise ValueError("El título y el contenido son obligatorios")
+            raise ValueError("Título y contenido son obligatorios")
+
         return PostRepository.create_post(title, content, user_id, category_id)
 
     @staticmethod
-    def delete_post(post_id: int, current_user_id: int, current_role: str):
-        post = PostRepository.get_by_id(post_id)
+    def update_post(post, title: str, content: str, user_id: int, role: str):
         if not post:
-            raise ValueError("Post no encontrado")
+            return None
         
-        if current_role != "admin" and post.user_id != current_user_id:
-            raise PermissionError("No tienes permiso para eliminar este post")
+        if role == "user" and post.user_id != user_id:
+            return False
 
+        updated_post = PostRepository.update(post, title, content)
+        return updated_post
+
+    @staticmethod
+    def delete_post(post, user_id: int, role: str):
+        if not post:
+            return None
+
+        if role == "user" and post.user_id != user_id:
+            return False
+        
         PostRepository.delete(post)
-        return post
+        return True

@@ -6,7 +6,7 @@ class CategoryService:
         return CategoryRepository.get_all()
 
     @staticmethod
-    def get_category_by_id(category_id: int):
+    def get_category(category_id: int):
         return CategoryRepository.get_by_id(category_id)
 
     @staticmethod
@@ -19,13 +19,13 @@ class CategoryService:
     def update_category(category_id: int, name: str):
         cat = CategoryRepository.get_by_id(category_id)
         if not cat:
-            raise ValueError("Categoría no encontrada")
+            return None
         return CategoryRepository.update(cat, name)
 
     @staticmethod
     def delete_category(category_id: int):
         cat = CategoryRepository.get_by_id(category_id)
         if not cat:
-            raise ValueError("Categoría no encontrada")
+            return None
         CategoryRepository.delete(cat)
-        return cat
+        return True

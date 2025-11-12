@@ -1,5 +1,6 @@
 from app import db
 from models import Post
+from sqlalchemy import func
 
 class PostRepository:
     @staticmethod
@@ -24,6 +25,22 @@ class PostRepository:
         return post
 
     @staticmethod
+    def update(post: Post, title: str, content: str, category_id: int = None):
+        post.title = title
+        post.content = content
+        post.category_id = category_id if category_id is not None else post.category_id
+        post.updated_at = func.now()
+
+        db.session.commit()
+        return post
+
+    @staticmethod
     def delete(post: Post):
         db.session.delete(post)
+        db.session.commit()
+
+    @staticmethod
+    def soft_delete(post: Post):
+        post.is_published = False
+        post.updated_at = func.now()
         db.session.commit()

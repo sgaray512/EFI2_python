@@ -87,7 +87,7 @@ GET http://127.0.0.1:5000/api/posts
 ---
 
 ### Crear comentario en un post
-POST http://127.0.0.1:5000/api/comments/1
+POST http://127.0.0.1:5000/api/posts/1/comments
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -98,7 +98,7 @@ Content-Type: application/json
 ---
 
 ### Listar comentarios de un post
-GET http://127.0.0.1:5000/api/comments/1
+GET http://127.0.0.1:5000/api/posts/1/comments
 
 ---
 

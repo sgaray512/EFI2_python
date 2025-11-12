@@ -3,7 +3,7 @@ from repositories.user_repository import UserRepository
 
 class UserService:
     @staticmethod
-    def get_all_users():
+    def list_users():
         return UserRepository.get_all()
 
     @staticmethod
@@ -25,6 +25,6 @@ class UserService:
     def deactivate_user(user_id: int):
         user = UserRepository.get_by_id(user_id)
         if not user:
-            raise ValueError("Usuario no encontrado")
+            return None
         UserRepository.deactivate_user(user)
         return user
