@@ -5,8 +5,7 @@ from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identi
 from passlib.hash import bcrypt
 from datetime import timedelta
 
-from app import db
-from models import User
+from models import db, User as UserModel, Post, Comment, Category
 from services import UserService, PostService, CommentService, CategoryService
 from schemas import UserSchema, RegisterSchema, LoginSchema, CategorySchema, PostSchema, CommentSchema
 from decorators import role_required
@@ -31,12 +30,16 @@ class User(MethodView):
     @role_required("admin")
     def get(self):
         users = UserService.list_users()
-        return jsonify([u.to_dict() for u in users]), 200
+        return jsonify([{
+            "id": u.id,
+            "name": u.name,
+            "email": u.email,
+            "role": u.credential.role
+        } for u in users]), 200
 
 class UserDetail(MethodView):
     @jwt_required()
     def get(self, id):
-        """El propio usuario o admin pueden ver el perfil"""
         claims = get_jwt()
         current_id = claims.get("id")
         role = claims.get("role")
@@ -48,12 +51,16 @@ class UserDetail(MethodView):
         if not user:
             return jsonify({"error": "Usuario no encontrado"}), 404
 
-        return jsonify(user.to_dict()), 200
+        return jsonify({
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "role": user.credential.role
+        }), 200
 
     @jwt_required()
     @role_required("admin")
     def delete(self, id):
-        """Solo admin puede desactivar usuarios"""
         result = UserService.deactivate_user(id)
         if not result:
             return jsonify({"error": "Usuario no encontrado"}), 404
@@ -62,7 +69,6 @@ class UserDetail(MethodView):
     @jwt_required()
     @role_required("admin")
     def patch(self, id):
-        """Solo admin puede cambiar roles"""
         data = request.get_json()
         new_role = data.get("role")
 
@@ -79,14 +85,31 @@ class UserDetail(MethodView):
 class Post(MethodView):
     def get(self):
         posts = PostService.list_posts()
-        return jsonify([p.to_dict() for p in posts]), 200
+        return jsonify([
+            {
+                "id": p.id,
+                "title": p.title,
+                "content": p.content,
+                "created_at": p.created_at.isoformat() if p.created_at else None,
+                "user_id": p.user_id,
+                "author": {
+                    "id": p.author.id,
+                    "name": p.author.name
+                } if p.author else None,
+                "category": {
+                    "id": p.category.id,
+                    "name": p.category.name
+                } if p.category else None
+            }
+            for p in posts
+        ]), 200
 
     @jwt_required()
     def post(self):
-        identity = get_jwt()
-        user_id = identity.get("id")
-        data = request.get_json()
+        claims = get_jwt()
+        user_id = claims.get("id")
 
+        data = request.get_json()
         try:
             validated = PostSchema().load(data)
         except ValidationError as err:
@@ -98,6 +121,7 @@ class Post(MethodView):
             user_id=user_id,
             category_id=validated.get("category_id")
         )
+
         return jsonify({"msg": "Post creado", "id": post.id}), 201
 
 class PostDetail(MethodView):
@@ -105,7 +129,22 @@ class PostDetail(MethodView):
         post = PostService.get_post(id)
         if not post:
             return jsonify({"error": "Post no encontrado"}), 404
-        return jsonify(post.to_dict()), 200
+
+        return jsonify({
+            "id": post.id,
+            "title": post.title,
+            "content": post.content,
+            "created_at": post.created_at.isoformat() if post.created_at else None,
+            "user_id": post.user_id,
+            "author": {
+                "id": post.author.id,
+                "name": post.author.name
+            } if post.author else None,
+            "category": {
+                "id": post.category.id,
+                "name": post.category.name
+            } if post.category else None
+        }), 200
 
     @jwt_required()
     def put(self, id):
@@ -118,15 +157,21 @@ class PostDetail(MethodView):
             return jsonify({"error": "Post no encontrado"}), 404
 
         data = request.get_json()
-        result = PostService.update_post(
+        try:
+            validated = PostSchema(partial=True).load(data)
+        except ValidationError as err:
+            return jsonify({"errors": err.messages}), 400
+
+        updated_post = PostService.update_post(
             post,
-            title=data.get("title", post.title),
-            content=data.get("content", post.content),
+            title=validated.get("title", post.title),
+            content=validated.get("content", post.content),
+            category_id=validated.get("category_id", post.category_id),
             user_id=user_id,
             role=role
         )
 
-        if result is False:
+        if updated_post is False:
             return jsonify({"error": "No tienes permiso para editar este post"}), 403
 
         return jsonify({"msg": "Post actualizado"}), 200
@@ -151,7 +196,16 @@ class PostDetail(MethodView):
 class Comment(MethodView):
     def get(self, post_id):
         comments = CommentService.list_comments(post_id)
-        return jsonify([c.to_dict() for c in comments]), 200
+        return jsonify([
+            {
+                "id": c.id,
+                "content": c.content,
+                "created_at": c.created_at.isoformat() if c.created_at else None,
+                "user_id": c.user_id,
+                "author": c.author.name if c.author else None,
+            }
+            for c in comments
+        ]), 200
 
     @jwt_required()
     def post(self, post_id):
@@ -191,7 +245,10 @@ class CommentDetail(MethodView):
 class Category(MethodView):
     def get(self):
         categories = CategoryService.list_categories()
-        return jsonify([c.to_dict() for c in categories]), 200
+        return jsonify([{
+            "id": c.id,
+            "name": c.name
+        } for c in categories]), 200
 
     @jwt_required()
     @role_required("admin", "moderator")
@@ -206,7 +263,10 @@ class CategoryDetail(MethodView):
         cat = CategoryService.get_category(id)
         if not cat:
             return jsonify({"error": "Categoría no encontrada"}), 404
-        return jsonify(cat.to_dict()), 200
+        return jsonify({
+            "id": cat.id,
+            "name": cat.name
+        }), 200
 
     @jwt_required()
     @role_required("admin", "moderator")
@@ -238,7 +298,7 @@ class AuthLogin(MethodView):
         except ValidationError as err:
             return jsonify({"errors": err.messages}), 400
 
-        user = User.query.filter_by(email=validated_data["email"]).first()
+        user = UserModel.query.filter_by(email=validated_data["email"]).first()
         if not user or not user.credential:
             return jsonify({"error": "Credenciales inválidas"}), 401
 
@@ -246,7 +306,7 @@ class AuthLogin(MethodView):
             return jsonify({"error": "Credenciales inválidas"}), 401
 
         access_token = create_access_token(
-            identity=user.id,
+            identity=str(user.id),
             additional_claims={
                 "id": user.id,
                 "email": user.email,

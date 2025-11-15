@@ -4,6 +4,10 @@ from sqlalchemy import func
 
 class PostRepository:
     @staticmethod
+    def get_all():
+        return Post.query.all()
+
+    @staticmethod
     def get_all_published():
         return Post.query.filter_by(is_published=True).all()
 

@@ -18,14 +18,20 @@ class PostService:
         return PostRepository.create_post(title, content, user_id, category_id)
 
     @staticmethod
-    def update_post(post, title: str, content: str, user_id: int, role: str):
+    def update_post(post, title=None, content=None, category_id=None, user_id=None, role=None):
         if not post:
             return None
-        
-        if role == "user" and post.user_id != user_id:
+    
+        if role != "admin" and post.user_id != user_id:
             return False
-
-        updated_post = PostRepository.update(post, title, content)
+    
+        updated_post = PostRepository.update(
+            post=post,
+            title=title,
+            content=content,
+            category_id=category_id
+        )
+    
         return updated_post
 
     @staticmethod

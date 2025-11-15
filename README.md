@@ -29,8 +29,10 @@ sudo snap install astral-uv --classic
 git clone git@github.com:sgaray512/EFI2_python.git
 cd EFI2_python
 
-2. Instalá las dependencias declaradas en requirements.txt:
+2. Instalá las dependencias declaradas en requirements.txt y pyproject.toml:
 uv pip install -r requirements.txt
+uv init
+uv sync
 
 3. Inicializá la base de datos si usás migraciones:
 # Crear la base y migraciones
